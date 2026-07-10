@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Giấy Ủy Quyền (GUQ)</title>
+<style>
+  :root{
+    --navy:#0f2a4a;
+    --blue:#1a56a3;
+    --blue-light:#eaf2fc;
+    --bg:#f3f5f9;
+    --card:#ffffff;
+    --border:#e2e6ee;
+    --text:#1f2937;
+    --text-soft:#5b6472;
+    --green:#1f9d55;
+    --green-bg:#eafaf0;
+    --gray-bg:#eef0f3;
+    --amber:#b8720a;
+    --amber-bg:#fff6e5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.5;
+  }
+  header.top{
+    background:linear-gradient(135deg,var(--navy),var(--blue));
+    color:#fff;padding:22px 24px;
+  }
+  header.top h1{margin:0 0 4px;font-size:22px;font-weight:800;}
+  header.top p{margin:0;color:#cfe0f5;font-size:13.5px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px;}
+
+  .summary{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;margin:-26px 0 20px;
+  }
+  .sum-card{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:14px 16px;box-shadow:0 2px 8px rgba(15,30,60,.06);
+  }
+  .sum-card .num{font-size:24px;font-weight:800;color:var(--navy);}
+  .sum-card .lbl{font-size:12px;color:var(--text-soft);margin-top:2px;}
+  .sum-card.green .num{color:var(--green);}
+  .sum-card.gray .num{color:#8a93a3;}
+
+  .filter-bar{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:16px 18px;margin-bottom:18px;box-shadow:0 1px 3px rgba(15,30,60,.04);
+  }
+  .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+  .f-group{display:flex;flex-direction:column;gap:5px;}
+  .f-group label{font-size:12px;font-weight:700;color:var(--text-soft);}
+  .f-group select, .f-group input[type=text]{
+    border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13.5px;
+    background:#fbfcfe;color:var(--text);font-family:inherit;
+  }
+  .f-group select:focus, .f-group input:focus{outline:2px solid var(--blue);outline-offset:-1px;}
+  .filter-actions{display:flex;justify-content:space-between;align-items:center;margin-top:12px;}
+  #resultCount{font-size:13px;color:var(--text-soft);}
+  #resultCount b{color:var(--navy);}
+  .clear-btn{
+    background:none;border:1px solid var(--border);border-radius:8px;padding:7px 14px;
+    font-size:12.5px;color:var(--text-soft);cursor:pointer;
+  }
+  .clear-btn:hover{background:var(--gray-bg);}
+
+  .cards{display:flex;flex-direction:column;gap:12px;padding-bottom:50px;}
+  .rec-card{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:16px 18px;box-shadow:0 1px 3px rgba(15,30,60,.04);
+  }
+  .rec-top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;}
+  .rec-code{font-weight:800;color:var(--navy);font-size:14.5px;}
+  .rec-date{font-size:12.5px;color:var(--text-soft);}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;}
+  .badge.active{background:var(--green-bg);color:var(--green);}
+  .badge.inactive{background:var(--gray-bg);color:#7a828f;}
+  .badge.type{background:var(--blue-light);color:var(--blue);}
+  .rec-flow{
+    font-size:13.5px;margin:6px 0 8px;color:var(--text);
+    display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  }
+  .rec-flow .name{font-weight:700;}
+  .rec-flow .arrow{color:#b4bcc8;}
+  .rec-projects{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .proj-tag{font-size:11.5px;background:#f4f6fb;border:1px solid var(--border);color:var(--text-soft);padding:2px 8px;border-radius:6px;}
+  .rec-summary{font-size:13.5px;color:var(--text);white-space:pre-line;margin-bottom:8px;}
+  .rec-extra{
+    font-size:12.5px;background:var(--amber-bg);color:#7a4e05;border-radius:8px;
+    padding:8px 12px;margin-top:8px;
+  }
+  .rec-extra b{color:#5c3b00;}
+  .rec-note{font-size:12px;color:var(--text-soft);margin-top:8px;font-style:italic;}
+  
+  .loading-state{text-align:center;padding:60px 20px;color:var(--blue);font-weight:bold;font-size:16px;}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--text-soft);}
+  .empty-state .ic{font-size:34px;margin-bottom:10px;}
+
+  .view-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .view-btn{
+    background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 14px;
+    font-size:12.5px;font-weight:700;color:var(--text-soft);cursor:pointer;
+  }
+  .view-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+  .table-wrap{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    overflow:auto;max-height:72vh;box-shadow:0 1px 3px rgba(15,30,60,.04);
+    margin-bottom:50px;
+  }
+  table.data-table{border-collapse:collapse;width:100%;min-width:1500px;font-size:12.8px;}
+  table.data-table thead th{
+    position:sticky;top:0;z-index:2;
+    background:var(--navy);color:#fff;text-align:left;
+    padding:10px 12px;font-size:12px;font-weight:700;white-space:nowrap;
+    border-right:1px solid rgba(255,255,255,.12);
+  }
+  table.data-table thead th:first-child{position:sticky;left:0;z-index:3;}
+  table.data-table tbody td{
+    padding:9px 12px;border-bottom:1px solid var(--border);border-right:1px solid #eef0f5;
+    vertical-align:top;white-space:normal;max-width:260px;
+  }
+  table.data-table tbody td.col-stt{max-width:40px;color:var(--text-soft);}
+  table.data-table tbody td.col-guq{max-width:140px;font-weight:700;color:var(--navy);white-space:nowrap;
+    position:sticky;left:0;background:inherit;}
+  table.data-table tbody td.col-date{max-width:100px;white-space:nowrap;color:var(--text-soft);}
+  table.data-table tbody td.col-summary{min-width:280px;}
+  table.data-table tbody tr:nth-child(even) td{background:#fafbfd;}
+  table.data-table tbody tr:hover td{background:var(--blue-light);}
+  .cell-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;display:inline-block;}
+  .cell-badge.active{background:var(--green-bg);color:var(--green);}
+  .cell-badge.inactive{background:var(--gray-bg);color:#7a828f;}
+
+  @media (max-width:640px){
+    header.top h1{font-size:19px;}
+    .rec-card{padding:14px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>Dashboard Giấy Ủy Quyền (GUQ) - DCC</h1>
+    <p>Hệ thống tra cứu thông tin ủy quyền nhanh chóng nội bộ từ Google Sheets.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="summary" id="summary"></div>
+
+  <div class="filter-bar">
+    <div class="filter-grid">
+      <div class="f-group">
+        <label for="fProject">Dự án</label>
+        <select id="fProject"><option value="">— Tất cả dự án —</option></select>
+      </div>
+      <div class="f-group">
+        <label for="fPerson">Người ủy quyền</label>
+        <select id="fPerson"><option value="">— Tất cả người ủy quyền —</option></select>
+      </div>
+      <div class="f-group">
+        <label for="fStatus">Tình trạng hiệu lực</label>
+        <select id="fStatus">
+          <option value="">— Tất cả —</option>
+          <option value="Còn hiệu lực">Còn hiệu lực</option>
+          <option value="Hết hiệu lực">Hết hiệu lực</option>
+        </select>
+      </div>
+      <div class="f-group">
+        <label for="fSearch">Tìm theo Số GUQ / nội dung</label>
+        <input type="text" id="fSearch" placeholder="vd: 141/2023 hoặc từ khoá...">
+      </div>
+    </div>
+    <div class="filter-actions">
+      <span id="resultCount">Đang tải dữ liệu...</span>
+      <button class="clear-btn" onclick="clearFilters()">Xoá bộ lọc</button>
+    </div>
+  </div>
+
+  <div class="view-toggle">
+    <button class="view-btn active" id="btnTableView" onclick="setView('table')">📋 Dạng bảng (đủ cột)</button>
+    <button class="view-btn" id="btnCardView" onclick="setView('card')">🗂 Dạng thẻ</button>
+  </div>
+
+  <div id="loadingState" class="loading-state">⏳ Hệ thống đang kết nối và nạp dữ liệu trực tiếp từ Google Sheets...</div>
+
+  <div class="table-wrap" id="tableWrap" style="display:none;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Số GUQ</th>
+          <th>Ngày hiệu lực</th>
+          <th>Dự án</th>
+          <th>Người ủy quyền</th>
+          <th>Người được ủy quyền</th>
+          <th>Tóm tắt nội dung</th>
+          <th>Loại ủy quyền</th>
+          <th>Tình trạng hiệu lực</th>
+          <th>Lý do chấm dứt</th>
+          <th>Văn bản thay thế/chấm dứt</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="cards" id="cards" style="display:none;"></div>
+</div>
+
+<script>
+  // Link Google Sheets chuẩn đã được cập nhật tham số định danh trang tính của anh
+  const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlQQNzgbsPFdHDIlK4JoqToHs5D3qBDdCVWZohrP7AcQRxKVniFtG-Cjlv1AtEng/pub?gid=1529729586&single=true&output=csv";
+  
+  let records = [];
+
+  // Hàm tải dữ liệu chính
+  async function loadDataFromGoogleSheet() {
+    try {
+      const response = await fetch(sheetUrl);
+      if (!response.ok) throw new Error("Không thể kết nối tới Google Sheet");
+      
+      const csvText = await response.text();
+      
+      // Phân tích dữ liệu CSV
+      records = csvToObjects(csvText);
+      
+      // Chuẩn hóa và bóc tách danh sách dự án
+      records.forEach(r => {
+        r._duAnList = r['Dự án'] ? r['Dự án'].split(',').map(s=>s.trim()).filter(s=>s) : [];
+      });
+
+      // Ẩn Loading và hiển thị bảng dữ liệu chính
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('tableWrap').style.display = 'block';
+
+      // Khởi tạo bộ lọc và hiển thị nội dung
+      initFilters();
+      applyFilters();
+
+    } catch (error) {
+      console.error(error);
+      document.getElementById('loadingState').innerHTML = `❌ Lỗi: Không thể kết nối và đồng bộ dữ liệu. Hãy đảm bảo anh vẫn đang để file Google Sheet mở ở chế độ "Bất kỳ ai có liên kết đều có thể xem".`;
+    }
+  }
+
+  // Thuật toán bóc tách dữ liệu CSV chuẩn hóa
+  function csvToObjects(csvText) {
+    const lines = [];
+    let row = [""];
+    let inQuotes = false;
+
+    for (let i = 0; i < csvText.length; i++) {
+      let c = csvText[i];
+      let next = csvText[i+1];
+      if (c === '"') {
+        if (inQuotes && next === '"') { row[row.length - 1] += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+      } else if (c === ',' && !inQuotes) {
+        row.push('');
+      } else if ((c === '\r' || c === '\n') && !inQuotes) {
+        if (c === '\r' && next === '\n') { i++; }
+        lines.push(row);
+        row = [''];
+      } else {
+        row[row.length - 1] += c;
+      }
+    }
+    if (row.length > 1 || row[0] !== '') lines.push(row);
+    if (lines.length === 0) return [];
+
+    const headers = lines[0].map(h => h.trim());
+    const result = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].length === 0 || (lines[i].length === 1 && lines[i][0] === "")) continue;
+      
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = lines[i][index] ? lines[i][index].trim() : '';
+      });
+      
+      // Bỏ qua hàng nếu hoàn toàn không có Số GUQ (tránh lấy hàng trống ở cuối file)
+      if (!obj['Số GUQ']) continue;
+      
+      result.push(obj);
+    }
+    return result;
+  }
+
+  // Tạo các ô lựa chọn tự động
+  function initFilters(){
+    const projs = new Set();
+    const persons = new Set();
+    records.forEach(r=>{
+      if(r._duAnList) r._duAnList.forEach(p=>projs.add(p));
+      if(r['Người ủy quyền']) persons.add(r['Người ủy quyền']);
+    });
+
+    const fProject = document.getElementById('fProject');
+    fProject.innerHTML = '<option value="">— Tất cả dự án —</option>';
+    Array.from(projs).sort().forEach(p=>{
+      fProject.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+
+    const fPerson = document.getElementById('fPerson');
+    fPerson.innerHTML = '<option value="">— Tất cả người ủy quyền —</option>';
+    Array.from(persons).sort().forEach(p=>{
+      fPerson.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+    
+    document.getElementById('fSearch').addEventListener('input', applyFilters);
+  }
+
+  // Thống kê số lượng văn bản
+  function renderSummary(data){
+    const total = data.length;
+    const active = data.filter(r=>r['Tình trạng hiệu lực']==='Còn hiệu lực').length;
+    const inactive = total - active;
+
+    document.getElementById('summary').innerHTML = `
+      <div class="sum-card">
+        <div class="num">${total}</div>
+        <div class="lbl">Tổng số văn bản</div>
+      </div>
+      <div class="sum-card green">
+        <div class="num">${active}</div>
+        <div class="lbl">Đang còn hiệu lực</div>
+      </div>
+      <div class="sum-card gray">
+        <div class="num">${inactive}</div>
+        <div class="lbl">Đã hết hiệu lực</div>
+      </div>
+    `;
+  }
+
+  // Hiển thị dạng Bảng
+  function renderTable(data){
+    const tbody = document.getElementById('tableBody');
+    if(data.length === 0){
+      tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--text-soft);padding:40px;">Không tìm thấy dữ liệu phù hợp</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.map(r=>{
+      const badgeCls = r['Tình trạng hiệu lực']==='Còn hiệu lực'?'active':'inactive';
+      const projsBadge = r._duAnList ? r._duAnList.map(p=>`<span class="proj-tag" style="display:inline-block;margin:2px;">${p}</span>`).join('') : '';
+      return `
+        <tr>
+          <td class="col-stt">${r['STT'] || ''}</td>
+          <td class="col-guq">${r['Số GUQ'] || ''}</td>
+          <td class="col-date">${r['Ngày hiệu lực'] || ''}</td>
+          <td>${projsBadge}</td>
+          <td>${r['Người ủy quyền'] || ''}</td>
+          <td>${r['Người được ủy quyền'] || ''}</td>
+          <td class="col-summary">${r['Tóm tắt nội dung'] || ''}</td>
+          <td>${r['Loại ủy quyền'] || ''}</td>
+          <td><span class="cell-badge ${badgeCls}">${r['Tình trạng hiệu lực'] || ''}</span></td>
+          <td>${r['Lý do chấm dứt'] || ''}</td>
+          <td>${r['Văn bản thay thế/chấm dứt'] || ''}</td>
+          <td>${r['Ghi chú'] || ''}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Hiển thị dạng Thẻ
+  function renderCards(data){
+    const wrapper = document.getElementById('cards');
+    if(data.length === 0){
+      wrapper.innerHTML = `<div class="empty-state"><div class="ic">🔍</div>Không tìm thấy giấy ủy quyền nào phù hợp.</div>`;
+      return;
+    }
+    wrapper.innerHTML = data.map(r=>{
+      const badgeCls = r['Tình trạng hiệu lực']==='Còn hiệu lực'?'active':'inactive';
+      const projs = r._duAnList ? r._duAnList.map(p=>`<span class="proj-tag">${p}</span>`).join('') : '';
+      const extra = r['Văn bản thay thế/chấm dứt'] ? `<div class="rec-extra"><b>Thay thế/Chấm dứt bởi:</b> ${r['Văn bản thay thế/chấm dứt']}</div>` : '';
+      const note = r['Ghi chú'] ? `<div class="rec-note"><b>Ghi chú:</b> ${r['Ghi chú']}</div>` : '';
+      return `
+        <div class="rec-card">
+          <div class="rec-top">
+            <span class="rec-code">${r['Số GUQ'] || ''}</span>
+            <span class="rec-date">Sắp xếp ngày: ${r['Ngày hiệu lực'] || ''}</span>
+            <span class="badge ${badgeCls}">${r['Tình trạng hiệu lực'] || ''}</span>
+            ${r['Loại ủy quyền'] ? `<span class="badge type">${r['Loại ủy quyền']}</span>` : ''}
+          </div>
+          <div class="rec-flow">
+            <span class="name">${r['Người ủy quyền'] || 'N/A'}</span>
+            <span class="arrow">➔</span>
+            <span class="name" style="color:var(--blue);">${r['Người được ủy quyền'] || 'Chưa xác định'}</span>
+          </div>
+          <div class="rec-projects">${projs}</div>
+          <div class="rec-summary">${r['Tóm tắt nội dung'] || ''}</div>
+          ${extra}
+          ${note}
+        </div>`;
+    }).join('');
+  }
+
+  // Bộ lọc tìm kiếm tổng hợp
+  function applyFilters(){
+    const proj = document.getElementById('fProject').value;
+    const person = document.getElementById('fPerson').value;
+    const status = document.getElementById('fStatus').value;
+    const search = document.getElementById('fSearch').value.trim().toLowerCase();
+
+    const filtered = records.filter(r=>{
+      if(proj && (!r._duAnList || !r._duAnList.includes(proj))) return false;
+      if(person && r['Người ủy quyền'] !== person) return false;
+      if(status && r['Tình trạng hiệu lực'] !== status) return false;
+      if(search){
+        const hay = [r['Số GUQ'], r['Tóm tắt nội dung'], r['Người được ủy quyền'], r['Ghi chú']]
+          .join(' ').toLowerCase();
+        if(!hay.includes(search)) return false;
+      }
+      return true;
+    });
+
+    document.getElementById('resultCount').innerHTML = `Hiển thị <b>${filtered.length}</b> / ${records.length} giấy ủy quyền`;
+    renderSummary(filtered);
+    renderTable(filtered);
+    renderCards(filtered);
+  }
+
+  // Xóa trắng bộ lọc
+  function clearFilters(){
+    document.getElementById('fProject').value = '';
+    document.getElementById('fPerson').value = '';
+    document.getElementById('fStatus').value = '';
+    document.getElementById('fSearch').value = '';
+    applyFilters();
+  }
+
+  // Lắng nghe thay đổi bộ lọc
+  ['fProject','fPerson','fStatus'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+
+  // Chuyển chế độ xem Table / Card
+  function setView(mode){
+    document.getElementById('btnTableView').classList.toggle('active', mode==='table');
+    document.getElementById('btnCardView').classList.toggle('active', mode==='card');
+    document.getElementById('tableWrap').style.display = mode==='table'?'block':'none';
+    document.getElementById('cards').style.display = mode==='card'?'flex':'none';
+  }
+
+  // Tự động kích hoạt khi bật trang web
+  loadDataFromGoogleSheet();
+</script>
+
+</body>
+</html>
